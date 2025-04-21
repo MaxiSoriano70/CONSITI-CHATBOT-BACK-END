@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from "../models/user.model";
+import { PayloadToken } from '../models/token.model';
 
 @Injectable()
 export class AuthService {
@@ -17,8 +18,8 @@ export class AuthService {
             }
         ];
 
-        const user: User = users.find(
-        (x : User) => x.email === email && x.password
+        const user = users.find(
+            (x: User) => x.email === email && x.password === password
         );
 
         if(user){
@@ -26,5 +27,12 @@ export class AuthService {
         }
 
         return null;
+    }
+
+    generateJWT(user: User){
+        const payload: PayloadToken = { role: user.role, sub:user.id};
+        return{
+            access_token: this.jwtService.sign(payload),
+        };
     }
 }
