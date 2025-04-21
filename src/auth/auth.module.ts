@@ -1,24 +1,27 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AuthService } from './services/auth.service';
 import { AuthController } from './controllers/auth.controller';
 import { LocalStrategy } from './strategies/local.strategy';
+import { User, UserSchema } from './models/user.schema';
 
 @Module({
   imports: [
     PassportModule,
     JwtModule.registerAsync({
-      useFactory: () => {
-        return {
-          secret: 'CHATBOT!@#',
-          signOptions: { expiresIn: '1d' },
-        }
-      }
+      useFactory: () => ({
+        secret: 'CHATBOT!@#',
+        signOptions: { expiresIn: '1d' },
+      }),
     }),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema }
+    ]),
   ],
   providers: [AuthService, LocalStrategy],
   controllers: [AuthController],
-  exports: [AuthService], // importante si lo usás fuera de este módulo
+  exports: [AuthService],
 })
 export class AuthModule {}

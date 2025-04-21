@@ -1,38 +1,59 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { User } from "../models/user.model";
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { User } from '../models/user.schema';
 import { PayloadToken } from '../models/token.model';
+import * as bcrypt from 'bcrypt';
+import { CreateUserDto } from '../dtos/create-user.dto';
+import { UserRole } from '../enums/user-role.enum';
 
 @Injectable()
 export class AuthService {
-    constructor(private jwtService: JwtService){
-    }
+    constructor(
+        private jwtService: JwtService,
+        @InjectModel(User.name) private userModel: Model<User>,
+    ) {}
 
-    async validateUser(email: string, password: string){
-        const users: User[] = [
-            {
-                email: "maxi@gmail.com",
-                password: "maxi123",
-                role: "ADMIN",
-                id: 1
-            }
-        ];
+    async validateUser(email: string, password: string): Promise<User | null> {
+        const user = await this.userModel.findOne({ email }).select('+password');
 
-        const user = users.find(
-            (x: User) => x.email === email && x.password === password
-        );
+        if (!user) {
+            return null;
+        }
 
-        if(user){
+        const isPasswordValid = await bcrypt.compare(password, user.password!);
+
+        if (isPasswordValid) {
             return user;
         }
 
         return null;
     }
 
-    generateJWT(user: User){
-        const payload: PayloadToken = { role: user.role, sub:user.id};
-        return{
+    generateJWT(user: User): { access_token: string } {
+        const payload: PayloadToken = {
+            role: user.role,
+            sub: (user._id as Types.ObjectId).toString(),
+        };
+
+        return {
             access_token: this.jwtService.sign(payload),
         };
+    }
+
+    async register(createUserDto: CreateUserDto): Promise<User> {
+        const { email } = createUserDto;
+
+        const existingUser = await this.userModel.findOne({ email });
+        if (existingUser) {
+            throw new ConflictException('El correo electrónico ya está registrado');
+        }
+
+        const user = new this.userModel(createUserDto);
+        await user.hashPassword();
+        await user.save();
+
+        return user;
     }
 }
