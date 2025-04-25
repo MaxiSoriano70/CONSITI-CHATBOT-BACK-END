@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { ConfigService } from '@nestjs/config';
@@ -6,12 +6,20 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     constructor(private configService: ConfigService) {
+        const clientID = configService.get<string>('GOOGLE_CLIENT_ID');
+        const clientSecret = configService.get<string>('GOOGLE_CLIENT_SECRET');
+        const callbackURL = configService.get<string>('GOOGLE_CALLBACK_URL');
+
+        if (!clientID || !clientSecret || !callbackURL) {
+            throw new Error('Missing Google OAuth configuration. Please check your environment variables.');
+        }
+
         super({
-            clientID: configService.get<string>('GOOGLE_CLIENT_ID'),
-            clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET'),
-            callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL'),
+            clientID,
+            clientSecret,
+            callbackURL,
             scope: ['email', 'profile'],
-            passReqToCallback: true,
+            passReqToCallback: true
         });
     }
 
@@ -21,16 +29,21 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         refreshToken: string,
         profile: any,
         done: VerifyCallback
-    ) {
-        const { name, emails, photos } = profile;
-        const user = {
-            email: emails[0].value,
-            firstName: name.givenName,
-            lastName: name.familyName,
-            picture: photos?.[0]?.value,
-            accessToken
-        };
+    ): Promise<any> {
+        try {
+            const { name, emails, photos } = profile;
 
-        done(null, user);
+            const user = {
+                email: emails[0].value,
+                firstName: name.givenName,
+                lastName: name.familyName,
+                picture: photos?.[0]?.value,
+                accessToken
+            };
+
+            done(null, user);
+        } catch (error) {
+            done(error, false);
+        }
     }
 }

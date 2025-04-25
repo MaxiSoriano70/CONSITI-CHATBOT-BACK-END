@@ -58,21 +58,29 @@ export class AuthService {
     }
 
     async validateGoogleUser(googleUser: any): Promise<{ user: User; token: { access_token: string } }> {
-        const email = googleUser.email;
-        let user = await this.userModel.findOne({ email });
+        try {
+            const email = googleUser.email;
+            let user = await this.userModel.findOne({ email });
 
-        if (!user) {
-            user = new this.userModel({
-                email: googleUser.email,
-                fullname: `${googleUser.firstName} ${googleUser.lastName}`,
-                birthdate: new Date(),
-                password: null,
-                role: UserRole.USER,
-            });
-            await user.save();
+            if (!user) {
+                const newUser = {
+                    email: googleUser.email,
+                    fullname: `${googleUser.firstName || ''} ${googleUser.lastName || ''}`.trim(),
+                    birthdate: new Date(),
+                    password: Math.random().toString(36).slice(-8),
+                    role: UserRole.USER
+                };
+
+                user = new this.userModel(newUser);
+                await user.hashPassword();
+                await user.save();
+            }
+
+            const token = this.generateJWT(user);
+            return { user, token };
+        } catch (error) {
+            console.error('Error in validateGoogleUser:', error);
+            throw error;
         }
-
-        const token = this.generateJWT(user);
-        return { user, token };
     }
-}
+} 
