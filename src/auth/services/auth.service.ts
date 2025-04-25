@@ -60,16 +60,18 @@ export class AuthService {
     async validateGoogleUser(googleUser: any): Promise<{ user: User; token: { access_token: string } }> {
         const email = googleUser.email;
         let user = await this.userModel.findOne({ email });
+
         if (!user) {
             user = new this.userModel({
                 email: googleUser.email,
-                name: googleUser.name,
+                fullname: `${googleUser.firstName} ${googleUser.lastName}`,
+                birthdate: new Date(),
                 password: null,
                 role: UserRole.USER,
-                picture: googleUser.picture,
             });
             await user.save();
         }
+
         const token = this.generateJWT(user);
         return { user, token };
     }

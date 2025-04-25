@@ -1,32 +1,36 @@
-import { Inject, Injectable } from "@nestjs/common";
-import { PassportStrategy } from "@nestjs/passport";
-import { Strategy, VerifyCallback } from "passport-google-oauth20";
-import googleOauthConfig from "../config/google-oauth.config";
-import { ConfigType } from "@nestjs/config";
+import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy, VerifyCallback } from 'passport-google-oauth20';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class GoogleStrategy extends PassportStrategy(Strategy) {
-    constructor(
-        @Inject(googleOauthConfig.KEY)
-        private googleConfiguration: ConfigType<typeof googleOauthConfig>
-    ) {
+export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+    constructor(private configService: ConfigService) {
         super({
-            clientID: googleConfiguration.clientID,
-            clientSecret: googleConfiguration.clientSecret,
-            callbackURL: googleConfiguration.callbackURL,
+            clientID: configService.get<string>('GOOGLE_CLIENT_ID'),
+            clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET'),
+            callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL'),
             scope: ['email', 'profile'],
+            passReqToCallback: true,
         });
     }
 
-    async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback) {
+    async validate(
+        request: any,
+        accessToken: string,
+        refreshToken: string,
+        profile: any,
+        done: VerifyCallback
+    ) {
         const { name, emails, photos } = profile;
         const user = {
             email: emails[0].value,
-            name: name.givenName,
-            picture: photos[0].value,
-            provider: profile.provider,
-            password: ""
+            firstName: name.givenName,
+            lastName: name.familyName,
+            picture: photos?.[0]?.value,
+            accessToken
         };
+
         done(null, user);
     }
 }
