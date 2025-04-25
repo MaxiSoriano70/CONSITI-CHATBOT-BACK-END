@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { UserRole } from '../enums/user-role.enum';
+import * as bcrypt from 'bcrypt';
 import { hashPassword } from '../utils/hash-password.util';
 
 @Schema()
