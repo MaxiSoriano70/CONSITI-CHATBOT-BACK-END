@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { UserRole } from '../enums/user-role.enum';
-import * as bcrypt from 'bcrypt';
+import { hashPassword } from '../utils/hash-password.util';
 
 @Schema()
 export class User extends Document {
@@ -22,8 +22,8 @@ export class User extends Document {
     @Prop({
         required: [true, 'La fecha de nacimiento es obligatoria'],
         validate: {
-        validator: (value: Date) => value <= new Date(),
-        message: 'La fecha de nacimiento no puede ser mayor a hoy',
+            validator: (value: Date) => value <= new Date(),
+            message: 'La fecha de nacimiento no puede ser mayor a hoy',
         },
     })
     birthdate: Date;
@@ -40,7 +40,7 @@ export class User extends Document {
     })
     role: UserRole;
 
-    async hashPassword() {
+    async hashPassword(): Promise<void> {
         if (this.password) {
             const salt = await bcrypt.genSalt(10);
             this.password = await bcrypt.hash(this.password, salt);

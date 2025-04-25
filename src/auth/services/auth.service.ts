@@ -6,7 +6,7 @@ import { User } from '../models/user.schema';
 import { PayloadToken } from '../models/token.model';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../dtos/create-user.dto';
-import { UserRole } from '../enums/user-role.enum';
+import { hashPassword } from '../utils/hash-password.util';
 
 @Injectable()
 export class AuthService {
@@ -43,17 +43,16 @@ export class AuthService {
     }
 
     async register(createUserDto: CreateUserDto): Promise<User> {
-        const { email } = createUserDto;
-
+        const { email, password } = createUserDto;
         const existingUser = await this.userModel.findOne({ email });
         if (existingUser) {
             throw new ConflictException('El correo electrónico ya está registrado');
         }
 
-        const user = new this.userModel(createUserDto);
-        await user.hashPassword();
-        await user.save();
+        const hashedPassword = await hashPassword(password);
 
+        const user = await this.userModel.create({ ...createUserDto, password: hashedPassword });
+        await user.save();
         return user;
     }
 }
