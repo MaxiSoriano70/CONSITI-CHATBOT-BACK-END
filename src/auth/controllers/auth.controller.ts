@@ -54,7 +54,7 @@ export class AuthController {
             ...token,
         };
     }
-
+    /* Login con google */
     @Get('google/login')
     @UseGuards(GoogleAuthGuard)
     googleLogin(@Req() req: SessionRequest) {
