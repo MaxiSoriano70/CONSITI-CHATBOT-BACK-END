@@ -92,11 +92,9 @@ export class AuthService {
     async registerWithGoogle(googleUser: any): Promise<{ user: User; token: { access_token: string } }> {
         const email = googleUser.email;
         let user = await this.userModel.findOne({ email });
-
         if (user) {
             throw new ConflictException('Este usuario ya está registrado. Inicia sesión con Google.');
         }
-
         const newUser = new this.userModel({
             email: googleUser.email,
             fullname: `${googleUser.firstName || ''} ${googleUser.lastName || ''}`.trim(),
@@ -105,7 +103,6 @@ export class AuthService {
             birthdate: null,
         });
         await newUser.save();
-
         const token = this.generateJWT(newUser);
         return { user: newUser, token };
     }

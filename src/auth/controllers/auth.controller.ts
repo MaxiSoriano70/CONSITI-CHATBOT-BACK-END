@@ -59,13 +59,16 @@ export class AuthController {
     @UseGuards(GoogleAuthGuard)
     googleLogin(@Req() req: SessionRequest) {
         req.session.state = 'login';
+        console.log('Estado para Google Login:', req.session.state);
     }
 
     @Get('google/register')
     @UseGuards(GoogleAuthGuard)
     googleRegister(@Req() req: SessionRequest) {
         req.session.state = 'register';
+        console.log('Estado para Google Register:', req.session.state);
     }
+
 
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
@@ -77,6 +80,8 @@ export class AuthController {
             throw new UnauthorizedException('Fallo al autenticar con Google.');
         }
 
+        console.log('Estado en callback:', state);
+
         if (state === 'login') {
             const { user, token } = await this.authService.loginWithGoogle(googleUser);
             return { user: toUserResponse(user), ...token };
@@ -87,4 +92,5 @@ export class AuthController {
             throw new BadRequestException('Estado de autenticación desconocido.');
         }
     }
+
 }
