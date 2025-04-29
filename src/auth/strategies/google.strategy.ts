@@ -19,28 +19,25 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
             clientSecret,
             callbackURL,
             scope: ['email', 'profile'],
-            passReqToCallback: true
+            passReqToCallback: true,
+            state: true
         });
     }
 
-    async validate(
-        request: any,
-        accessToken: string,
-        refreshToken: string,
-        profile: any,
-        done: VerifyCallback
-    ): Promise<any> {
+    async validate(request: any, accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
         try {
             const { name, emails, photos } = profile;
+            const state = request.query.state || request.session.state;
+            console.log('State in validate:', state);
 
             const user = {
                 email: emails[0].value,
                 firstName: name.givenName,
                 lastName: name.familyName,
                 picture: photos?.[0]?.value,
-                accessToken
+                accessToken,
+                googleState: state,
             };
-
             done(null, user);
         } catch (error) {
             done(error, false);

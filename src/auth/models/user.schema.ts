@@ -20,39 +20,40 @@ export class User extends Document {
     fullname: string;
 
     @Prop({
-        required: [true, 'La fecha de nacimiento es obligatoria'],
+        required: false,
         validate: {
-        validator: (value: Date) => value <= new Date(),
-        message: 'La fecha de nacimiento no puede ser mayor a hoy',
+            validator: (value: Date) => !value || value <= new Date(),
+            message: 'La fecha de nacimiento no puede ser mayor a hoy',
         },
     })
-    birthdate: Date;
+    birthdate?: Date;
 
     @Prop({
-        required: [true, 'La contraseña es obligatoria'],
+        required: false,
         select: false,
     })
-    password: string;
+    password?: string;
 
     @Prop({
         enum: UserRole,
         default: UserRole.USER,
     })
     role: UserRole;
-
-    async hashPassword() {
-        if (this.password) {
-            const salt = await bcrypt.genSalt(10);
-            this.password = await bcrypt.hash(this.password, salt);
-        }
-    }
 }
+
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-UserSchema.pre('save', async function (next) {
-    if (this.isModified('password')) {
-        await this.hashPassword();
+UserSchema.pre('save', async function(next) {
+    if (this.isModified('password') && this.password) {
+        try {
+            const salt = await bcrypt.genSalt(10);
+            this.password = await bcrypt.hash(this.password, salt);
+            next();
+        } catch (error) {
+            next(error);
+        }
+    } else {
+        next();
     }
-    next();
 });
