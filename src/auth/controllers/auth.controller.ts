@@ -16,9 +16,9 @@ import { CreateUserDto } from '../dtos/create-user.dto';
 import { toUserResponse } from '../dtos/user-response.dto';
 import { User } from '../models/user.schema';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
-
+import session from 'express-session';
 interface SessionRequest extends Request {
-    session: Record<string, any>;
+    session: session.Session & Partial<session.SessionData> & { state?: string };
 }
 
 @Controller('auth')
@@ -54,7 +54,7 @@ export class AuthController {
             ...token,
         };
     }
-    /* Login con google */
+
     @Get('google/login')
     @UseGuards(GoogleAuthGuard)
     googleLogin(@Req() req: SessionRequest) {
@@ -69,19 +69,15 @@ export class AuthController {
         console.log('Estado para Google Register:', req.session.state);
     }
 
-
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
     async googleCallback(@Req() req: SessionRequest) {
         const googleUser = req.user;
         const state = req.session.state;
-
+        console.log('Estado en callback:', state);
         if (!googleUser) {
             throw new UnauthorizedException('Fallo al autenticar con Google.');
         }
-
-        console.log('Estado en callback:', state);
-
         if (state === 'login') {
             const { user, token } = await this.authService.loginWithGoogle(googleUser);
             return { user: toUserResponse(user), ...token };
