@@ -5,20 +5,21 @@ import {
     Get,
     Post,
     Req,
+    Res,
     UnauthorizedException,
     UseGuards,
     ValidationPipe,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { toUserResponse } from '../dtos/user-response.dto';
 import { User } from '../models/user.schema';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
-
+import session from 'express-session';
 interface SessionRequest extends Request {
-    session: Record<string, any>;
+    session: session.Session & Partial<session.SessionData> & { state?: string };
 }
 
 @Controller('auth')
@@ -56,40 +57,41 @@ export class AuthController {
     }
 
     @Get('google/login')
-    @UseGuards(GoogleAuthGuard)
-    googleLogin(@Req() req: SessionRequest) {
+    async googleLogin(@Req() req: SessionRequest, @Res() res: Response) {
         req.session.state = 'login';
-        console.log('Estado para Google Login:', req.session.state);
+        console.log('Estado asignado para Google Login:', req.session.state);
+        return res.redirect('/auth/google');
     }
 
     @Get('google/register')
-    @UseGuards(GoogleAuthGuard)
-    googleRegister(@Req() req: SessionRequest) {
+    async googleRegister(@Req() req: SessionRequest, @Res() res: Response) {
         req.session.state = 'register';
-        console.log('Estado para Google Register:', req.session.state);
+        console.log('Estado asignado para Google Register:', req.session.state);
+        return res.redirect('/auth/google');
     }
 
+    @Get('google')
+    @UseGuards(GoogleAuthGuard)
+    googleAuth() {
+    }
 
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
     async googleCallback(@Req() req: SessionRequest) {
         const googleUser = req.user;
         const state = req.session.state;
-
-        if (!googleUser) {
-            throw new UnauthorizedException('Fallo al autenticar con Google.');
-        }
-
         console.log('Estado en callback:', state);
-
+        if (!googleUser) {
+        throw new UnauthorizedException('Fallo al autenticar con Google.');
+        }
         if (state === 'login') {
-            const { user, token } = await this.authService.loginWithGoogle(googleUser);
-            return { user: toUserResponse(user), ...token };
+        const { user, token } = await this.authService.loginWithGoogle(googleUser);
+        return { user: toUserResponse(user), ...token };
         } else if (state === 'register') {
-            const { user, token } = await this.authService.registerWithGoogle(googleUser);
-            return { user: toUserResponse(user), ...token };
+        const { user, token } = await this.authService.registerWithGoogle(googleUser);
+        return { user: toUserResponse(user), ...token };
         } else {
-            throw new BadRequestException('Estado de autenticación desconocido.');
+        throw new BadRequestException('Estado de autenticación desconocido.');
         }
     }
 
