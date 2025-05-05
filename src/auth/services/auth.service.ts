@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -43,16 +43,66 @@ export class AuthService {
     }
 
     async register(createUserDto: CreateUserDto): Promise<User> {
-        const { email, password } = createUserDto;
-        const existingUser = await this.userModel.findOne({ email });
-        if (existingUser) {
-            throw new ConflictException('El correo electrónico ya está registrado');
+        const { email, password, birthdate } = createUserDto;
+        if (!password) {
+            throw new ConflictException('La contraseña es obligatoria para el registro.');
         }
 
-        const hashedPassword = await hashPassword(password);
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
+        if (!passwordRegex.test(password)) {
+            throw new BadRequestException(
+                'La contraseña debe tener al menos 6 caracteres, una mayúscula, una minúscula y un número.'
+            );
+        }
 
-        const user = await this.userModel.create({ ...createUserDto, password: hashedPassword });
+        if (!birthdate) {
+            throw new ConflictException('La fecha de nacimiento es obligatoria para el registro.');
+        }
+
+        const birthdateObj = new Date(birthdate);
+        const today = new Date();
+
+        if (birthdateObj > today) {
+            throw new BadRequestException('La fecha de nacimiento no puede ser mayor a hoy.');
+        }
+
+        const existingUser = await this.userModel.findOne({ email });
+        if (existingUser) {
+            throw new ConflictException('El correo electrónico ya está registrado.');
+        }
+
+        const user = new this.userModel(createUserDto);
         await user.save();
         return user;
+    }
+
+    async loginWithGoogle(googleUser: any): Promise<{ user: User; token: { access_token: string } }> {
+        const email = googleUser.email;
+        const user = await this.userModel.findOne({ email });
+
+        if (!user) {
+            throw new ConflictException('Este usuario no está registrado. Regístrate primero con Google.');
+        }
+
+        const token = this.generateJWT(user);
+        return { user, token };
+    }
+
+    async registerWithGoogle(googleUser: any): Promise<{ user: User; token: { access_token: string } }> {
+        const email = googleUser.email;
+        let user = await this.userModel.findOne({ email });
+        if (user) {
+            throw new ConflictException('Este usuario ya está registrado. Inicia sesión con Google.');
+        }
+        const newUser = new this.userModel({
+            email: googleUser.email,
+            fullname: `${googleUser.firstName || ''} ${googleUser.lastName || ''}`.trim(),
+            role: UserRole.USER,
+            password: null,
+            birthdate: null,
+        });
+        await newUser.save();
+        const token = this.generateJWT(newUser);
+        return { user: newUser, token };
     }
 }

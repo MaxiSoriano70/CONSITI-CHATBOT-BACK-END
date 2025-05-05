@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import googleOauthConfig from './auth/config/google-oauth.config';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AuthModule } from './auth/auth.module';
         uri: configService.get<string>('MONGO_DB'),
       }),
     }),
+    ConfigModule.forFeature(googleOauthConfig),
     AuthModule,
   ],
   controllers: [AppController],
