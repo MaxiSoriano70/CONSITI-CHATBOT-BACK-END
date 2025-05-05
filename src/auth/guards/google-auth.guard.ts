@@ -1,9 +1,10 @@
 import { Request } from 'express';
+import session from 'express-session';
 import { ExecutionContext, Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 export interface SessionRequest extends Request {
-    session: {
+    session: session.Session & Partial<session.SessionData> & {
         state?: string;
     };
 }
