@@ -6,7 +6,7 @@ import { User } from '../models/user.schema';
 import { PayloadToken } from '../models/token.model';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../dtos/create-user.dto';
-import { UserRole } from '../enums/user-role.enum';
+import { hashPassword } from '../utils/hash-password.util';
 
 @Injectable()
 export class AuthService {
@@ -73,7 +73,6 @@ export class AuthService {
 
         const user = new this.userModel(createUserDto);
         await user.save();
-
         return user;
     }
 
