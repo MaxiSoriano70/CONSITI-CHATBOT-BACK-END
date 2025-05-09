@@ -7,6 +7,7 @@ import { PayloadToken } from '../models/token.model';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { hashPassword } from '../utils/hash-password.util';
+import { UserRole } from '../enums/user-role.enum';
 
 @Injectable()
 export class AuthService {
