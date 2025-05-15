@@ -40,6 +40,12 @@ export class User extends Document {
         default: UserRole.USER,
     })
     role: UserRole;
+
+    @Prop({ required: false })
+    resetCode?: string;
+
+    @Prop({ required: false })
+    resetCodeExpiration?: Date;
 }
 
 

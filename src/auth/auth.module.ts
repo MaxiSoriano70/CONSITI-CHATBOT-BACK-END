@@ -7,6 +7,7 @@ import { AuthController } from './controllers/auth.controller';
 import { LocalStrategy } from './strategies/local.strategy';
 import { User, UserSchema } from './models/user.schema';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { EmailService } from './services/email.service';
 
 @Module({
   imports: [
@@ -21,7 +22,12 @@ import { GoogleStrategy } from './strategies/google.strategy';
       { name: User.name, schema: UserSchema }
     ]),
   ],
-  providers: [AuthService, LocalStrategy, GoogleStrategy],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    GoogleStrategy,
+    EmailService,
+  ],
   controllers: [AuthController],
   exports: [AuthService],
 })

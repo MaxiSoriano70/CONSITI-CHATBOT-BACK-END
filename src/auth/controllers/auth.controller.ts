@@ -18,6 +18,8 @@ import { toUserResponse } from '../dtos/user-response.dto';
 import { User } from '../models/user.schema';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
 import session from 'express-session';
+import { RequestPasswordResetDto } from '../dtos/password-reset-request.dto';
+import { ConfirmPasswordResetDto } from '../dtos/confirm-password-reset.dto';
 interface SessionRequest extends Request {
     session: session.Session & Partial<session.SessionData> & { state?: string };
 }
@@ -93,6 +95,20 @@ export class AuthController {
         } else {
         throw new BadRequestException('Estado de autenticación desconocido.');
         }
+    }
+
+    @Post('password-reset/request')
+    async requestPasswordReset(
+        @Body(new ValidationPipe({ whitelist: true })) dto: RequestPasswordResetDto,
+    ) {
+        await this.authService.requestPasswordReset(dto.email);
+        return { message: 'Se ha enviado un código de recuperación al correo electrónico' };
+    }
+
+    @Post('password-reset/confirm')
+    async confirmPasswordReset(@Body(new ValidationPipe({ whitelist: true })) dto: ConfirmPasswordResetDto) {
+        await this.authService.confirmPasswordReset(dto.email, dto.code, dto.newPassword);
+        return { message: 'Contraseña actualizada exitosamente' };
     }
 
 }

@@ -8,12 +8,15 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { hashPassword } from '../utils/hash-password.util';
 import { UserRole } from '../enums/user-role.enum';
+import { EmailService } from './email.service';
+
 
 @Injectable()
 export class AuthService {
     constructor(
         private jwtService: JwtService,
         @InjectModel(User.name) private userModel: Model<User>,
+        private emailService: EmailService,
     ) {}
 
     async validateUser(email: string, password: string): Promise<User | null> {
@@ -106,4 +109,41 @@ export class AuthService {
         const token = this.generateJWT(newUser);
         return { user: newUser, token };
     }
+
+    async requestPasswordReset(email: string): Promise<void> {
+        const user = await this.userModel.findOne({ email });
+        if (!user) throw new BadRequestException('No se encontró un usuario con ese correo.');
+
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiration = new Date(Date.now() + 15 * 60 * 1000);
+
+        user.resetCode = resetCode;
+        user.resetCodeExpiration = expiration;
+        await user.save();
+
+        await this.emailService.sendResetEmail(user.email, resetCode);
+    }
+
+    async confirmPasswordReset(email: string, code: string, newPassword: string): Promise<void> {
+        const user = await this.userModel.findOne({ email });
+
+        if (!user || user.resetCode !== code) {
+            throw new BadRequestException('Código inválido o usuario no encontrado.');
+        }
+
+        if (!user.resetCodeExpiration || user.resetCodeExpiration < new Date()) {
+            throw new BadRequestException('El código ha expirado.');
+        }
+
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            throw new BadRequestException('Contraseña no cumple con los requisitos.');
+        }
+
+        user.password = newPassword;
+        user.resetCode = undefined;
+        user.resetCodeExpiration = undefined;
+        await user.save();
+    }
+
 }
