@@ -9,11 +9,15 @@ export class EmailService {
     constructor() {
         this.transporter = nodemailer.createTransport({
         host: 'mail.grupoconsiti.com',
-        port: 587,
-        secure: false,
+        port: 465,
+        secure: true,
+        name: 'gmail.com',
         auth: {
             user: 'noreply@grupoconsiti.com',
             pass: process.env.MAIL_PASSWOORD,
+        },
+        tls: {
+            rejectUnauthorized: false,
         },
             requireTLS: true,
             logger: true,
