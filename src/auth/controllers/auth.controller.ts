@@ -20,6 +20,7 @@ import { GoogleAuthGuard } from '../guards/google-auth.guard';
 import session from 'express-session';
 import { RequestPasswordResetDto } from '../dtos/password-reset-request.dto';
 import { ConfirmPasswordResetDto } from '../dtos/confirm-password-reset.dto';
+import { ChecketCodeDto } from '../dtos/checket-code.dto';
 interface SessionRequest extends Request {
     session: session.Session & Partial<session.SessionData> & { state?: string };
 }
@@ -103,6 +104,15 @@ export class AuthController {
     ) {
         await this.authService.requestPasswordReset(dto.email);
         return { message: 'Se ha enviado un código de recuperación al correo electrónico' };
+    }
+
+    @Post('password-reset/check-code')
+    async checkResetCode(@Body(new ValidationPipe({ whitelist: true })) dto: ChecketCodeDto) {
+        const isValid = await this.authService.verifyResetCode(dto.email, dto.code);
+    if (!isValid) {
+        throw new BadRequestException('Código inválido o expirado.');
+    }
+        return { message: 'Código válido. Puedes continuar con el cambio de contraseña.' };
     }
 
     @Post('password-reset/confirm')
