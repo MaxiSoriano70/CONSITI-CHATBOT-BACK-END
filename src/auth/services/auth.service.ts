@@ -114,7 +114,8 @@ export class AuthService {
         const user = await this.userModel.findOne({ email });
         if (!user) throw new BadRequestException('No se encontró un usuario con ese correo.');
 
-        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const resetCode = Math.floor(10000 + Math.random() * 90000).toString();
+
         const expiration = new Date(Date.now() + 15 * 60 * 1000);
 
         user.resetCode = resetCode;
@@ -123,6 +124,21 @@ export class AuthService {
 
         await this.emailService.sendResetEmail(user.email, resetCode);
     }
+
+    async verifyResetCode(email: string, code: string): Promise<boolean> {
+        const user = await this.userModel.findOne({ email });
+
+        if (!user || user.resetCode !== code) {
+            return false;
+        }
+
+        if (!user.resetCodeExpiration || user.resetCodeExpiration < new Date()) {
+            return false;
+        }
+
+        return true;
+    }
+
 
     async confirmPasswordReset(email: string, code: string, newPassword: string): Promise<void> {
         const user = await this.userModel.findOne({ email });
