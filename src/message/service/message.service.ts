@@ -1,11 +1,26 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
+import * as path from "path";
+import * as fs from "fs";
 
 @Injectable()
-export class ChatbotService {
+export class ChatbotService implements OnModuleInit {
     private genAI: GoogleGenAI;
 
-    constructor() {
+    onModuleInit() {
+        const credentialsPath = path.join(
+        process.cwd(),
+        process.env.GOOGLE_CREDENTIALS_PATH || ""
+        );
+
+        console.log("Cargando credenciales desde:", credentialsPath);
+
+        if (!fs.existsSync(credentialsPath)) {
+        throw new Error(`No se encontró el archivo de credenciales en: ${credentialsPath}`);
+        }
+
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialsPath;
+
         this.genAI = new GoogleGenAI({
         project: "project-gcp-tst",
         location: "global",
@@ -14,7 +29,7 @@ export class ChatbotService {
     }
 
     async getResponse(question: string): Promise<string> {
-        const modelName = "gemini-2.5-pro-preview-06-05";
+        const modelName = "gemini-2.0-flash-001";
 
         const stream = await this.genAI.models.generateContentStream({
         model: modelName,
@@ -25,6 +40,7 @@ export class ChatbotService {
             },
         ],
         config: {
+            systemInstruction: 'Responde siempre actuando como un analista de sistemas.',
             maxOutputTokens: 1024,
             temperature: 1,
             topP: 1,
