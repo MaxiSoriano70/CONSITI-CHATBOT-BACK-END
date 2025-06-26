@@ -1,10 +1,10 @@
-// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { MessageModule } from './message/message.module';
 import googleOauthConfig from './auth/config/google-oauth.config';
 
 @Module({
@@ -22,6 +22,7 @@ import googleOauthConfig from './auth/config/google-oauth.config';
     }),
     ConfigModule.forFeature(googleOauthConfig),
     AuthModule,
+    MessageModule
   ],
   controllers: [AppController],
   providers: [AppService],
